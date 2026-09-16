@@ -1,144 +1,71 @@
 import random
 
-comp_board = [["~"] * 5 for _ in range(5)]
-my_board = [["~"] * 5 for _ in range(5)]
+SIZE = 5
+SHIPS = [2, 1, 1]
 
-for size in (2, 1, 1):
+def create_board():
+    return [["~"] * SIZE for _ in range(SIZE)]
+
+def place_ship(board, size, symbol, auto=True):
     placed = False
     while not placed:
-        d = random.choice(["b", "n"])
-        r, c = random.randint(0, 4), random.randint(0, 4)
-        
-        if d == "b" and c + size <= 5 and "S" not in comp_board[r][c : c + size]:
-            for i in range(size):
-                comp_board[r][c + i] = "S"
-            placed = True
-        elif d == "n" and r + size <= 5 and all(comp_board[r + i][c] != "S" for i in range(size)):
-            for i in range(size):
-                comp_board[r + i][c] = "S"
-            placed = True
-
-print("=== МОРСЬКИЙ БІЙ ===")
-print("Оберіть спосіб розстановки ваших кораблів:")
-print("1 - Вручну")
-print("2 - Автоматично")
-
-choice = ""
-while choice not in ["1", "2"]:
-    choice = input("Ваш вибір (1 або 2): ").strip()
-
-if choice == "1":
-    print("\n=== РОЗСТАНОВКА КОРАБЛІВ ГРАВЦЯ ===")
-    for size in (2, 1, 1):
-        placed = False
-        while not placed:
-            try:
-                user_r = int(input(f"\nРядок для {size}-палубного (0-4): "))
-                user_c = int(input(f"Стовпець для {size}-палубного (0-4): "))
-                
-                if not (0 <= user_r <= 4 and 0 <= user_c <= 4):
-                    print("Будь ласка, вводьте цифри строго від 0 до 4!")
-                    continue
-                    
-                r, c = user_r, user_c
-                d = "b" if size == 1 else input("Напрямок (b - вбік, n - вниз): ").strip().lower()
-
-                if d == "b" and c + size <= 5 and "s" not in my_board[r][c : c + size] and my_board[r][c] == "~":
-                    for i in range(size):
-                        my_board[r][c + i] = "s"
-                    placed = True
-                elif d == "n" and r + size <= 5 and all(my_board[r + i][c] != "s" for i in range(size)):
-                    for i in range(size):
-                        my_board[r + i][c] = "s"
-                    placed = True
-                else:
-                    print("Помилка! Корабель не влазить або перетинається.")
-            except ValueError:
-                print("Введіть коректне число!")
-else:
-    for size in (2, 1, 1):
-        placed = False
-        while not placed:
+        if auto:
             d = random.choice(["b", "n"])
-            r, c = random.randint(0, 4), random.randint(0, 4)
-            
-            if d == "b" and c + size <= 5 and "s" not in my_board[r][c : c + size]:
-                for i in range(size):
-                    my_board[r][c + i] = "s"
-                placed = True
-            elif d == "n" and r + size <= 5 and all(my_board[r + i][c] != "s" for i in range(size)):
-                for i in range(size):
-                    my_board[r + i][c] = "s"
-                placed = True
-    print("\nВаші кораблі розставлено автоматично.")
+            r, c = random.randint(0, SIZE-1), random.randint(0, SIZE-1)
+        else:
+            r = int(input(f"Рядок для {size}-палубного (0-4): "))
+            c = int(input(f"Стовпець для {size}-палубного (0-4): "))
+            d = "b" if size == 1 else input("Напрямок (b-вбік, n-вниз): ").strip().lower()
+        if d == "b" and c+size <= SIZE and all(board[r][c+i] == "~" for i in range(size)):
+            for i in range(size): board[r][c+i] = symbol; placed = True
+        elif d == "n" and r+size <= SIZE and all(board[r+i][c] == "~" for i in range(size)):
+            for i in range(size): board[r+i][c] = symbol; placed = True
+        else:
+            if not auto: print("Помилка! Спробуйте ще.")
 
+def print_boards(my, comp):
+    print("\n   Ваше поле:           Поле комп'ютера:")
+    print("   " + " ".join(map(str, range(SIZE))) + "          " + " ".join(map(str, range(SIZE))))
+    for i in range(SIZE):
+        print(f"{i} | {' '.join(my[i])} |    {i} | {' '.join(x if x!='S' else '~' for x in comp[i])} |")
+
+def shoot(board, r, c, symbol):
+    if board[r][c] == symbol: board[r][c] = "X"; return True
+    if board[r][c] == "~": board[r][c] = "O"
+    return False
+
+# Ініціалізація
+comp_board, my_board = create_board(), create_board()
+for s in SHIPS: place_ship(comp_board, s, "S", auto=True)
+
+choice = input("Розстановка кораблів: 1-ручна, 2-авто: ")
+for s in SHIPS: place_ship(my_board, s, "s", auto=(choice!="1"))
+
+comp_hp = player_hp = sum(SHIPS)
 comp_shots = []
-player_hp = comp_hp = 4
 
 while player_hp > 0 and comp_hp > 0:
-    print("\n    Ваше поле:                Поле комп'ютера:")
-    print("    0 1 2 3 4                 0 1 2 3 4")
-    print("  -----------               -----------")
-    for i in range(5):
-        my_row = " ".join(my_board[i])
-        comp_row = " ".join(comp_board[i]).replace("S", "~")
-        print(f"{i} | {my_row} |           {i} | {comp_row} |")
+    print_boards(my_board, comp_board)
 
+    # Хід гравця
     while True:
         try:
-            user_sr = int(input("\nВаш постріл. Рядок (0-4): "))
-            user_sc = int(input("Стовпець (0-4): "))
-            
-            if not (0 <= user_sr <= 4 and 0 <= user_sc <= 4):
-                print("Будь ласка, введіть цифри строго від 0 до 4!")
-                continue
-                
-            sr, sc = user_sr, user_sc
-            
-            if comp_board[sr][sc] in ["X", "O"]:
-                print("Ви сюди вже стріляли! Спробуйте іншу клітинку.")
-                continue
-            break
-        except ValueError:
-            print("Ви нічого не ввели або ввели букву! Спробуйте ще раз.")
+            r, c = int(input("Ваш постріл рядок (0-4): ")), int(input("Стовпець (0-4): "))
+            if 0 <= r < SIZE and 0 <= c < SIZE and comp_board[r][c] not in ["X","O"]: break
+        except: pass
+        print("Некоректно, спробуйте ще.")
+    if shoot(comp_board, r, c, "S"): print("Влучив!"); comp_hp -= 1
+    else: print("Промах!")
 
-    if comp_board[sr][sc] == "S":
-        print("Влучив!")
-        comp_board[sr][sc] = "X"
-        comp_hp -= 1
-    else:
-        print("Промах!")
-        comp_board[sr][sc] = "O"
+    if comp_hp == 0: break
 
-    if comp_hp == 0:
-        break
-
+    # Хід комп'ютера
     while True:
-        cr, cc = random.randint(0, 4), random.randint(0, 4)
-        if (cr, cc) not in comp_shots:
-            comp_shots.append((cr, cc))
-            break
+        cr, cc = random.randint(0, SIZE-1), random.randint(0, SIZE-1)
+        if (cr, cc) not in comp_shots: comp_shots.append((cr, cc)); break
+    print(f"Комп'ютер стріляє в {cr},{cc}")
+    if shoot(my_board, cr, cc, "s"): print("Комп'ютер влучив!"); player_hp -= 1
+    else: print("Комп'ютер промахнувся!")
 
-    print(f"\nКомп'ютер стріляє в рядок {cr}, стовпець {cc}")
-    
-    if my_board[cr][cc] == "s":
-        print("Комп'ютер влучив!")
-        my_board[cr][cc] = "X"
-        player_hp -= 1
-    else:
-        print("Комп'ютер промахнувся!")
-        my_board[cr][cc] = "O"
-
-print("\n=== ГРУ ЗАВЕРШЕНО ===")
-print("    Ваше поле:                Поле комп'ютера:")
-print("    0 1 2 3 4                 0 1 2 3 4")
-print("  -----------               -----------")
-for i in range(5):
-    my_row = " ".join(my_board[i])
-    comp_row = " ".join(comp_board[i])  
-    print(f"{i} | {my_row} |           {i} | {comp_row} |")
-
-if comp_hp == 0:
-    print("\nВи перемогли!")
-else:
-    print("\nКомп'ютер переміг.")
+print_boards(my_board, comp_board)
+print("Ви перемогли!" if comp_hp == 0 else "Комп'ютер переміг.")
