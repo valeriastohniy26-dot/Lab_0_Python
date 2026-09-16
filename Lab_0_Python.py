@@ -34,7 +34,6 @@ def shoot(board, r, c, symbol):
     if board[r][c] == "~": board[r][c] = "O"
     return False
 
-# Ініціалізація
 comp_board, my_board = create_board(), create_board()
 for s in SHIPS: place_ship(comp_board, s, "S", auto=True)
 
@@ -47,7 +46,6 @@ comp_shots = []
 while player_hp > 0 and comp_hp > 0:
     print_boards(my_board, comp_board)
 
-    # Хід гравця
     while True:
         try:
             r, c = int(input("Ваш постріл рядок (0-4): ")), int(input("Стовпець (0-4): "))
@@ -59,7 +57,6 @@ while player_hp > 0 and comp_hp > 0:
 
     if comp_hp == 0: break
 
-    # Хід комп'ютера
     while True:
         cr, cc = random.randint(0, SIZE-1), random.randint(0, SIZE-1)
         if (cr, cc) not in comp_shots: comp_shots.append((cr, cc)); break
